@@ -1,0 +1,1 @@
+# Nova Adams-Duma: encryption implementation
