@@ -56,9 +56,26 @@ class WireguardEncryption:
         return ciphText + tag
 
     # performs Authenticated Decryption with Associated Data (ChaCha20, Poly1305)
-    def AEAD_decrypt(self, key, count, ciphText, auth_text):
+    def AEAD_decrypt(self, key, count, ciphText, auth_text): #*****
         if len(ciphText < 16):
-            raise ValueError("Ciphertext too short")
+            raise ValueError("Ciphertext is not long enough") #*****
+        
+        nonce = count.to_bytes(12, byteorder='little')
+        plain_text = ciphText[:-16]
+        tag = ciphText[-16:]
+
+        myCipher=Cipher(
+            algorithms.ChaCha20(key, nonce),
+            modes.Poly1305(tag), backend=default_backend()
+        )
+        myDecryptor = myCipher.decryptor()
+        myDecryptor.authenticate_additional_data(auth_text)
+
+        try:
+            decryptedData = decryptor.update(plain_text) + decryptor.finalize()
+            return decryptedData
+        except
+            raise ValueError("Invalid tag, decrpytion unsuccsesful") #*****
 
     # function that computes BLAKE2s hash of input data
     def Hash(self, data): #*****
@@ -111,10 +128,14 @@ class WireguardEncryption:
         nanosec = int((timeNow - int(timeNow)) * 1e9).to_bytes(4, byteorder='big')
         return sec + nanosec
 
+    # function that creates handshake initiation message going to the server
     def create_initiation_msg(self):
     
+    # function that processes server's response to the handshake message
     def process_response_msg(self):
     
+    # function that encrypts a message to be sent to the server
     def encrypt_msg(self):
 
+    # function that decrypts a message to be received from server
     def decrypt_msg(self):
