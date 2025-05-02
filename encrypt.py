@@ -15,6 +15,19 @@ class WireguardEncryption:
         # Using eliptic curve cryptography, generate client's static public key
         self.client_static_public_key = nacl.bindings.crypto_scalarmult_base(self.client_static_private_key)
 
+        # state variables ***********
+        self.sender_index = None
+        self.receiver_index = None
+        self.chain_key = None
+        self.hash_value = None
+        self.sending_key = None
+        self.receiving_key = None
+        self.sending_counter = 0
+        self.receiving_counter = 0
+
+        
+
+
     # function that generates new ephemeral key pair
     def DH_Generate(self):
         private_key = nacl.public.PrivateKey.generate() # generate a PrivateKey object from the nacl library
@@ -32,11 +45,22 @@ class WireguardEncryption:
 
     def AEAD_decrypt(self):
 
-    def Hash(self):
+    # function that computes BLAKE2s hash of input data
+    def Hash(self): #*****
+        h = hashlib.blake2s(digest_size=32)
+        h.update(data)
+        return h.digest()
 
-    def MixHash(self):
+    # function that hashes concatenated inputs
+    def MixHash(self): #*****
+        grouped = b"".join(inputs)
+        return self.Hash(combined)
 
-    def Mac(self):
+    # function that computes keted BLAKE2s 
+    def Mac(self): #*****
+        h = hashlib.blake2s(key, hashes.BLAKE2s(32), backend=default_backend())
+        h.update(data)
+        return h.finalize()
 
     def Hmac(self):
     
