@@ -25,8 +25,10 @@ class WireguardEncryption:
         self.sending_counter = 0
         self.receiving_counter = 0
 
-        
-
+        # constants
+        self.CONSTRUCTION = "Noise_IKpsk2_25519_ChaChaPoly_BLAKE2s"
+        self.IDENTIFIER = b"WireGuard v1 zx2c4 Jason@zx2c4.com"
+        self.LABEL_MAC1 = b"mac1----"
 
     # function that generates new ephemeral key pair
     def DH_Generate(self):
