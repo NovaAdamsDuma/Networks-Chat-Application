@@ -39,40 +39,77 @@ class WireguardEncryption:
         # Raw public key bytes: (private_key.public_key._public_key)
 
     #function that performs Diffie-Helman key exchange with Curve25519 (see paper)
-    def DH(self):
+    def DH(self, private_key, public_key):
         return nacl.bindings.crypto_scalarmult(private_key, public_key)
 
     # performs Authenticated Encryption with Associated Data (ChaCha20Poly1305)
-    def AEAD_encrypt(self):
+    def AEAD_encrypt(self, key, count, plain_text, auth_text):
+        nonce = count.to_bytes(12, byteorder='little')
+        myCipher=Cipher(
+            algorithms.ChaCha20(key, nonce),
+            modes.Poly1305(), backend=default_backend()
+        )
+        myEncryptor = myCipher.encryptor()
+        myEncryptor.authenticate_additional_data(auth_text)
+        ciphText = myEncryptor.update(plain_text) + myEncryptor.finalize()
+        tag = myEncryptor.tag
+        return ciphText + tag
 
-    def AEAD_decrypt(self):
+    # performs Authenticated Decryption with Associated Data (ChaCha20, Poly1305)
+    def AEAD_decrypt(self, key, count, ciphText, auth_text):
+        if len(ciphText < 16):
+            raise ValueError("Ciphertext too short")
 
     # function that computes BLAKE2s hash of input data
-    def Hash(self): #*****
+    def Hash(self, data): #*****
         h = hashlib.blake2s(digest_size=32)
         h.update(data)
         return h.digest()
 
     # function that hashes concatenated inputs
-    def MixHash(self): #*****
+    def MixHash(self, *inputs): #*****
         grouped = b"".join(inputs)
         return self.Hash(combined)
 
-    # function that computes keted BLAKE2s 
-    def Mac(self): #*****
-        h = hashlib.blake2s(key, hashes.BLAKE2s(32), backend=default_backend())
+    # function that computes keyed BLAKE2s 
+    def Mac(self, key, data): #*****
+        h = hashlib.blake2s(key, hashes.BLAKE2s(16), backend=default_backend())
         h.update(data)
         return h.finalize()
 
-    def Hmac(self):
+    # function that computes HMACD with BLAKE2s
+    def Hmac(self, key, data):
+        h = cryptohmac.HMAC(key, hashes.BLAKE2s(32), backend = default_backend())
+        h.update(data)
+        return h.finalize()
     
-    def Kdf1(self):
+    # produces one output key via derivation
+    def Kdf1(self, key, input_data): #******
+        temp0 = self.Hmac(key, input_data)
+        temp1 = self.Hmac(temp0, b"\x01")
+        return temp1
 
-    def Kdf2(self):
+    # prodcues 2 output keys via derivation
+    def Kdf2(self, key, input_data): #******
+        temp0 = self.Hmac(key, input_data)
+        temp1 = self.Hmac(temp0, b"\x01")
+        temp2 = self.Hmac(temp0, temp1 + b"\x02")
+        return (temp1, temp2)
     
-    def Kdf3(self):
+    # produces 3 output keys via derivation
+    def Kdf3(self, key, input_data):
+        temp0 = self.Hmac(key, input_data)
+        temp1 = self.Hmac(temp0, b"\x01")
+        temp2 = self.Hmac(temp0, temp1 + b"\x02")
+        temp3 = self.Hmac(temp0, temp2 + b"\x03")
+        return (temp1, temp2, temp3)
 
+    # returns the TAI64N timestamp
     def Timestamp(self):
+        timeNow = time.time()
+        sec = int(timeNow).to_bytes(8, bytorder='big')
+        nanosec = int((timeNow - int(timeNow)) * 1e9).to_bytes(4, byteorder='big')
+        return sec + nanosec
 
     def create_initiation_msg(self):
     
