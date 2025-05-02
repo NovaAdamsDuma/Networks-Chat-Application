@@ -135,7 +135,25 @@ class WireguardEncryption:
     def process_response_msg(self):
     
     # function that encrypts a message to be sent to the server
-    def encrypt_msg(self):
+    def encrypt_msg(self, plain_text):
+        if not self.sending_key:
+            raise ValueError("Handshake not succesfully completed")
+
+        pad_len = (16-(len(plain_text) % 16) % 16) # Pad plain text to multiple of 16 bytes, given spec
+        padded = plain_text + (b"\x00" * pad_len)
+
+        # message header
+        msg = bytearray()
+        msg.extend(b"\x04") # type 4 for transport data
+        msg.extend(b"\x00\x00\x00") # reserved 0s
+        msg.extend(self.receiver_index.to_bytes(4, byteorder='little'))
+        msg.extend(self.sending_counter.to_bytes(8, byteorder='little'))
+
+        # payload encryption
+        encPayload = self.AED_encrypt(
+            self.sending_key, self.sending_counter, padded, b"")
+        msg.extend(encPayload)
+        return(bytes(msg))
 
     # function that decrypts a message to be received from server
     def decrypt_msg(self):
