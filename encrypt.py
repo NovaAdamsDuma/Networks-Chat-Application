@@ -130,9 +130,11 @@ class WireguardEncryption:
 
     # function that creates handshake initiation message going to the server
     def create_initiation_msg(self):
+
     
     # function that processes server's response to the handshake message
     def process_response_msg(self):
+        
     
     # function that encrypts a message to be sent to the server
     def encrypt_msg(self, plain_text):
@@ -156,4 +158,34 @@ class WireguardEncryption:
         return(bytes(msg))
 
     # function that decrypts a message to be received from server
-    def decrypt_msg(self):
+    def decrypt_msg(self, ciphText):
+        if len (ciphText) < 16:
+            return None
+        if not self.receiving_key:
+            return None
+        
+        msgType = ciphText[0] 
+        if msgType != 0x04:
+            return None
+
+        recIndex = int.from_bytes(ciphertext[4:8], byteorder='little') # receiver index
+        if recIndex != self.sender_index:
+            return None
+            
+        count = int.from_bytes(ciphText[8:16], byteorder='little')
+        encryptedTxt = ciphText[16:]
+        
+        # payload decryption
+        try:
+            padded = self.AEAD_decrypt(
+                self.receiving_key,
+                count,
+                encryptedTxt,
+                b""
+            )
+            # Remove last zero bytes (padding)
+            plainTxt = padded.rstrip(b"\x00")
+            self.receiving_counter = count + 1
+            return plainTxt
+        except:
+            return None
