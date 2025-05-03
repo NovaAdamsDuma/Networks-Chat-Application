@@ -5,6 +5,9 @@ import os
 import time
 import hmac
 import hashlib
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import hashes, hmac as cryptohmac
+from cryptography.hazmat.backends import default_backend
 
 class WireguardEncryption:
     # initialized encryption component with private / public keys
